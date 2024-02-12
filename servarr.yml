@@ -1,0 +1,98 @@
+- name: Servarr stack setup
+  hosts: raspberrypi.local
+  become: true
+  vars:
+    transmission_image: linuxserver/transmission:latest
+    transmission_config_dir: /opt/transmission
+    prowlarr_config_dir: /opt/prowlarr
+    prowlarr_image: ghcr.io/hotio/prowlarr:latest
+    radarr_config_dir: /opt/radarr
+    radarr_image: ghcr.io/hotio/radarr:latest
+    sonarr_config_dir: /opt/sonarr
+    sonarr_image: ghcr.io/hotio/sonarr:latest
+    jellyfin_config_dir: /opt/jellyfin
+    jellyfin_image: jellyfin/jellyfin:latest
+    data_dir: /media
+    tvshows_dir: /media/tvshows
+    movies_dir: /media/movies
+  tasks:
+    - name: Prepare directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "1000"
+        group: "1000"
+        mode: "0755"
+      loop:
+        - transmission_config_dir
+        - prowlarr_config_dir
+        - radarr_config_dir
+        - sonarr_config_dir
+        - jellyfin_config_dir
+        - main_dir
+        - tvshows_dir
+        - movies_dir
+
+    - name: Prepare transmission container
+      community.docker.docker_container:
+        name: transmission
+        image: "{{ transmission_image }}"
+        state: started
+        recreate: true
+        network_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - "{{ transmission_config_dir }}:/config"
+          - "{{ data_dir }}:/data"
+
+    - name: Prepare prowlarr container
+      community.docker.docker_container:
+        name: prowlarr
+        image: "{{ prowlarr_image }}"
+        state: started
+        recreate: true
+        network_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - "{{ prowlarr_config_dir }}:/config"
+
+    - name: Prepare radarr container
+      community.docker.docker_container:
+        name: radarr
+        image: "{{ radarr_image }}"
+        state: started
+        recreate: true
+        network_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - "{{ radarr_config_dir }}:/config"
+          - "{{ data_dir }}:/data"
+
+    - name: Prepare sonarr container
+      community.docker.docker_container:
+        name: sonarr
+        image: "{{ sonarr_image }}"
+        state: started
+        recreate: true
+        network_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - "{{ sonarr_config_dir }}:/config"
+          - "{{ data_dir }}:/data"
+
+    - name: Prepare jellyfin container
+      community.docker.docker_container:
+        name: jellyfin
+        image: "{{ jellyfin_image }}"
+        state: started
+        recreate: true
+        network_mode: host
+        restart_policy: unless-stopped
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - "{{ jellyfin_config_dir }}:/config"
+          - "{{ data_dir }}:/data"
